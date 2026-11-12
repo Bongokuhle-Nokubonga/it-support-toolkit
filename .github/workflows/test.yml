@@ -1,0 +1,28 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tests (Windows PowerShell 5.1)
+        shell: powershell
+        run: .\tests\Run-Tests.ps1
+
+      - name: Tests (PowerShell 7)
+        shell: pwsh
+        run: .\tests\Run-Tests.ps1
+
+      - name: Code quality (PSScriptAnalyzer)
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $issues = Invoke-ScriptAnalyzer -Path .\ITSupportToolkit -Recurse -Severity Error, Warning `
+            -ExcludeRule PSAvoidUsingConvertToSecureStringWithPlainText, PSAvoidUsingWriteHost
+          $issues | Format-Table -AutoSize
+          if (@($issues | Where-Object Severity -eq 'Error').Count) { exit 1 }
